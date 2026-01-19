@@ -19,6 +19,10 @@ class Customer extends Model
         'balance',
     ];
 
+    protected $attributes = [
+        'balance' => 0,
+    ];
+
     protected $casts = [
         'credit_limit' => 'decimal:2',
         'balance' => 'decimal:2',

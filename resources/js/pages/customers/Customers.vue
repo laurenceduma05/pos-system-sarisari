@@ -6,7 +6,7 @@
           <h1 class="m-0">POS System - Customers Management</h1>
         </div>
         <div class="col-sm-6 text-right">
-          <button @click="showAddForm = true" class="btn btn-primary">
+          <button @click="openAddForm" type="button" class="btn btn-primary">
             <i class="fas fa-plus"></i> Add Customer
           </button>
         </div>
@@ -388,49 +388,113 @@ export default {
   },
   computed: {
     totalCreditLimit() {
-      return this.customers.reduce((sum, c) => sum + c.credit_limit, 0);
+      try {
+        if (!Array.isArray(this.customers)) return 0;
+        return this.customers.reduce(
+          (sum, c) => sum + (parseFloat(c.credit_limit) || 0),
+          0,
+        );
+      } catch (e) {
+        console.error("Error calculating totalCreditLimit:", e);
+        return 0;
+      }
     },
     totalUsedCredit() {
-      return this.customers.reduce((sum, c) => sum + c.balance, 0);
+      try {
+        if (!Array.isArray(this.customers)) return 0;
+        return this.customers.reduce(
+          (sum, c) => sum + (parseFloat(c.balance) || 0),
+          0,
+        );
+      } catch (e) {
+        console.error("Error calculating totalUsedCredit:", e);
+        return 0;
+      }
     },
     filteredCustomers() {
-      if (!this.searchQuery) return this.customers;
+      if (!this.searchQuery) return this.customers || [];
       const q = this.searchQuery.toLowerCase();
-      return this.customers.filter(
+      return (this.customers || []).filter(
         (c) =>
-          c.name.toLowerCase().includes(q) ||
+          (c.name && c.name.toLowerCase().includes(q)) ||
           (c.email && c.email.toLowerCase().includes(q)) ||
           (c.phone && c.phone.toLowerCase().includes(q)),
       );
     },
   },
   methods: {
+    openAddForm() {
+      this.showAddForm = true;
+      this.editingId = null;
+      this.formData = {
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        credit_limit: 0,
+      };
+    },
     async fetchCustomers() {
       try {
         const response = await axios.get("/admin/pos/customers");
-        this.customers = response.data.data || response.data;
+        // Handle both paginated and simple array responses
+        this.customers = response.data.data || response.data || [];
+
+        // Ensure balance is set for all customers
+        this.customers = this.customers.map((customer) => ({
+          ...customer,
+          balance: customer.balance || 0,
+          credit_limit: customer.credit_limit || 0,
+        }));
       } catch (error) {
         console.error("Error fetching customers:", error);
+        this.customers = [];
       }
     },
     async saveCustomer() {
       try {
+        // Validate required fields
+        if (
+          !this.formData.name ||
+          !this.formData.phone ||
+          !this.formData.credit_limit
+        ) {
+          alert(
+            "Please fill in all required fields (Name, Phone, Credit Limit)",
+          );
+          return;
+        }
+
         if (this.editingId) {
-          await axios.put(
+          const response = await axios.put(
             `/admin/pos/customers/${this.editingId}`,
             this.formData,
           );
+          console.log("Update response:", response);
         } else {
-          await axios.post("/admin/pos/customers", this.formData);
+          const response = await axios.post(
+            "/admin/pos/customers",
+            this.formData,
+          );
+          console.log("Create response:", response);
         }
-        this.fetchCustomers();
+
+        // Refresh the customer list
+        await this.fetchCustomers();
         this.cancelForm();
+
+        // Show success message
+        const message = this.editingId
+          ? "Customer updated successfully!"
+          : "Customer added successfully!";
+        alert(message);
       } catch (error) {
         console.error("Error saving customer:", error);
-        alert(
-          "Error saving customer: " + error.response?.data?.message ||
-            error.message,
-        );
+        const errorMessage =
+          error.response?.data?.message ||
+          error.response?.data?.errors?.email?.[0] ||
+          error.message;
+        alert("Error saving customer: " + errorMessage);
       }
     },
     editCustomer(customer) {
@@ -445,7 +509,8 @@ export default {
         const response = await axios.get(
           `/admin/pos/customers/${customer.id}/orders`,
         );
-        this.customerOrders = response.data.data || response.data;
+        // Handle both paginated and simple array responses
+        this.customerOrders = response.data.data || response.data || [];
       } catch (error) {
         console.error("Error fetching customer orders:", error);
         this.customerOrders = [];
@@ -489,7 +554,10 @@ export default {
     },
   },
   mounted() {
-    this.fetchCustomers();
+    console.log("Customers component mounted");
+    this.fetchCustomers().catch((err) => {
+      console.error("Failed to fetch customers on mount:", err);
+    });
   },
 };
 </script>

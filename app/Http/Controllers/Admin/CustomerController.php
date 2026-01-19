@@ -32,9 +32,12 @@ class CustomerController extends Controller
             });
         }
         
-        $customers = $query->paginate(15);
+        $customers = $query->get();
         
-        return response()->json($customers);
+        return response()->json([
+            'data' => $customers,
+            'total' => $customers->count(),
+        ]);
     }
 
     /**
@@ -43,6 +46,9 @@ class CustomerController extends Controller
     public function store(StoreCustomerRequest $request)
     {
         $validated = $request->validated();
+        
+        // Initialize balance to 0 if not provided
+        $validated['balance'] = $validated['balance'] ?? 0;
         
         $customer = Customer::create($validated);
         
