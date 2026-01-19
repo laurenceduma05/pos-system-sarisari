@@ -196,7 +196,18 @@
                                 </p>
                             </router-link>
                         </li>
-                        <!--li class="nav-item">
+
+                        <!-- Cashier Module - Prominent Button -->
+                        <li class="nav-item">
+                            <router-link to="/admin/cashier" active-class="active" class="nav-link" style="background-color: #28a745; margin: 10px 5px; border-radius: 5px;">
+                                <i class="nav-icon fas fa-cash-register" style="color: white;"></i>
+                                <p style="color: white; font-weight: bold;">
+                                    Cashier
+                                </p>
+                            </router-link>
+                        </li>
+
+                        <li class="nav-item">
                             <router-link to="/admin/users" active-class="active" class="nav-link">
                                 <i class="nav-icon fas fa-users"></i>
                                 <p>
@@ -259,18 +270,19 @@
                                 </p>
                             </router-link>
                         </li>
-
-                        <li class="nav-item">
-                            <form method="POST" action="{{ route('logout') }}" style="display: inline;">
-                                @csrf
-                                <button type="submit" style="background: none; border: none; padding: 0; cursor: pointer; width: 100%; text-align: left;" class="nav-link">
-                                    <i class="nav-icon fas fa-sign-out-alt"></i>
-                                    <p>Logout</p>
-                                </button>
-                            </form>
-                        </li>
                     </ul>
                 </nav>
+
+                <!-- Logout Button at Bottom -->
+                <div style="position: absolute; bottom: 0; width: 100%; padding: 10px; border-top: 1px solid #dee2e6;">
+                    <form method="POST" action="{{ route('logout') }}" style="width: 100%;">
+                        @csrf
+                        <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 10px 15px; cursor: pointer; width: 100%; text-align: left; border-radius: 4px; font-weight: 600;" class="btn btn-danger">
+                            <i class="nav-icon fas fa-sign-out-alt mr-2"></i>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
 
             </div>
 

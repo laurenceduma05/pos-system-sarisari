@@ -95,6 +95,14 @@ class Product extends Model
     }
 
     /**
+     * Get inventory transactions for this product
+     */
+    public function inventoryTransactions()
+    {
+        return $this->hasMany(InventoryTransaction::class);
+    }
+
+    /**
      * Check if product is low on stock
      */
     public function isLowStock()
@@ -135,5 +143,22 @@ class Product extends Model
     public static function findBySKUOrBarcode($value)
     {
         return self::where('sku', $value)->orWhere('barcode', $value)->first();
+    }
+
+    /**
+     * Track inventory transaction
+     */
+    public function trackInventory($quantity, $transactionType, $userId, $referenceType = null, $referenceId = null, $notes = null)
+    {
+        InventoryTransaction::create([
+            'product_id' => $this->id,
+            'transaction_type' => $transactionType,
+            'quantity_change' => $quantity,
+            'quantity_after' => $this->stock,
+            'user_id' => $userId,
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+            'notes' => $notes
+        ]);
     }
 }

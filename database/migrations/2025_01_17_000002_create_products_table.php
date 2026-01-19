@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('barcode')->nullable()->unique();
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->integer('quantity')->default(0);
             $table->timestamps();
             $table->softDeletes();
             

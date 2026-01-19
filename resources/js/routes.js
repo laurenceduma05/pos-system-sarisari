@@ -28,6 +28,7 @@ import POSProducts from "./pages/products/Products.vue";
 import POSCustomers from "./pages/customers/Customers.vue";
 import POSOrders from "./pages/orders/Orders.vue";
 import POSDashboard from "./components/Dashboard.vue";
+import Cashier from "./pages/cashier/Cashier.vue";
 
 export default [
   {
@@ -48,6 +49,14 @@ export default [
     path: "/admin/pos/dashboard",
     name: "POS Dashboard",
     component: POSDashboard,
+  },
+
+  // POS Module - Cashier
+  {
+    path: "/admin/cashier",
+    name: "Cashier",
+    component: Cashier,
+    icon: "cash-register",
   },
 
   {

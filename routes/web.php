@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\TeachingController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\ChildDedicationController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\Admin\CashierController;
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +107,16 @@ Route::middleware('auth')->group(function (){
     
     // POS Orders (for cashiers)
     Route::post('/api/orders', [OrderController::class, 'store'])->name('orders.create');
+    
+    // Cashier Routes
+    Route::prefix('admin/cashier')->group(function () {
+        Route::get('/', [CashierController::class, 'index'])->name('cashier.index');
+        Route::get('/search-products', [CashierController::class, 'searchProducts'])->name('cashier.search-products');
+        Route::get('/product/{id}', [CashierController::class, 'getProduct'])->name('cashier.get-product');
+        Route::post('/complete-order', [CashierController::class, 'completeOrder'])->name('cashier.complete-order');
+        Route::get('/order-history', [CashierController::class, 'getOrderHistory'])->name('cashier.order-history');
+        Route::post('/void-order', [CashierController::class, 'voidOrder'])->name('cashier.void-order');
+    });
     
     // ==================== Original Routes ====================
 
