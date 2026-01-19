@@ -472,9 +472,170 @@ export default {
       alert("Report generation coming soon!");
     },
     printReceipt() {
-      if (this.selectedOrder) {
-        window.print();
-      }
+      if (!this.selectedOrder) return;
+
+      const printWindow = window.open("", "_blank");
+
+      const items = this.selectedOrder.items || [];
+      const itemsHtml = items
+        .map(
+          (item) => `
+        <tr>
+          <td>${item.product_name || item.name}</td>
+          <td>${item.product_sku || item.sku || "—"}</td>
+          <td>${item.price || 0}</td>
+          <td>${item.quantity || 0}</td>
+          <td>${item.subtotal || item.price * item.quantity || 0}</td>
+        </tr>
+      `,
+        )
+        .join("");
+
+      const receiptHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Receipt - ${this.selectedOrder.order_number}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                font-size: 14px;
+              }
+              .receipt {
+                max-width: 400px;
+                margin: 0 auto;
+                border: 1px solid #ddd;
+                padding: 20px;
+              }
+              .header {
+                text-align: center;
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+              }
+              .section {
+                margin-bottom: 15px;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 15px 0;
+              }
+              table th, table td {
+                padding: 5px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+              }
+              .total-section {
+                margin-top: 20px;
+                border-top: 2px solid #333;
+                padding-top: 10px;
+              }
+              .text-right {
+                text-align: right;
+              }
+              .text-center {
+                text-align: center;
+              }
+              .bold {
+                font-weight: bold;
+              }
+              @media print {
+                body { margin: 0; padding: 10px; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="receipt">
+              <div class="header">
+                <h2 style="margin: 0;">Order Details</h2>
+              </div>
+
+              <div class="section">
+                <p><strong>Order Number:</strong> ${this.selectedOrder.order_number}</p>
+                <p><strong>Payment Method:</strong> ${this.formatPaymentMethod(this.selectedOrder.payment_method)}</p>
+              </div>
+
+              <div class="section">
+                <p><strong>Customer:</strong> ${this.selectedOrder.customer?.name || "Walk-in"}</p>
+                <p><strong>Status:</strong> ${this.selectedOrder.status}</p>
+              </div>
+
+              <div class="section">
+                <p><strong>Cashier:</strong> ${this.selectedOrder.user?.name || "—"}</p>
+                <p><strong>Paid Amount:</strong> ${this.selectedOrder.paid_amount || this.selectedOrder.total}</p>
+              </div>
+
+              <div class="section">
+                <p><strong>Date:</strong> ${new Date(this.selectedOrder.created_at).toLocaleString()}</p>
+                <p><strong>Change:</strong> ${this.selectedOrder.change_amount || 0}</p>
+              </div>
+
+              <div class="section">
+                <h3>Order Items</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>SKU</th>
+                      <th>Price</th>
+                      <th>Qty</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${itemsHtml}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="total-section">
+                <p><strong>Subtotal:</strong></p>
+                <p>\[ ${this.selectedOrder.subtotal || this.selectedOrder.total} \]</p>
+                
+                <p><strong>Tax:</strong></p>
+                <p>\[ ${this.selectedOrder.tax || 0} \]</p>
+                
+                ${
+                  this.selectedOrder.discount
+                    ? `
+                  <p><strong>Discount:</strong></p>
+                  <p>\[ -${this.selectedOrder.discount} \]</p>
+                `
+                    : ""
+                }
+                
+                <p><strong>Total:</strong></p>
+                <p>\[ ${this.selectedOrder.total} \]</p>
+              </div>
+
+              <div class="section text-center">
+                <p>Thank you for your purchase!</p>
+              </div>
+            </div>
+            
+            <div class="no-print" style="text-align: center; margin-top: 20px;">
+              <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px;">
+                Print Receipt
+              </button>
+              <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; margin-left: 10px;">
+                Close
+              </button>
+            </div>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(receiptHtml);
+      printWindow.document.close();
+      printWindow.focus();
+
+      // Auto print after a short delay
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
     },
     formatDate(date) {
       return (

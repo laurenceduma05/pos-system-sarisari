@@ -118,7 +118,7 @@
                     <td>
                       <strong>{{ order.order_number }}</strong>
                     </td>
-                    <td>{{ order.items_count || 0 }}</td>
+                    <td>{{ getOrderItemsCount(order) }}</td>
                     <td>{{ formatCurrency(order.total) }}</td>
                     <td>{{ formatCurrency(order.paid_amount) }}</td>
                     <td>
@@ -688,16 +688,57 @@ export default {
     },
 
     loadRecentOrders() {
+      // Using the same endpoint as Dashboard for consistency
       axios
-        .get("/admin/cashier/order-history")
+        .get("/admin/pos/orders")
         .then((response) => {
-          if (response.data.success) {
-            this.recentOrders = response.data.data;
+          if (response.data && response.data.data) {
+            // Take only the most recent orders and format them properly
+            this.recentOrders = response.data.data
+              .slice(0, 10)
+              .map((order) => ({
+                id: order.id,
+                order_number: order.order_number,
+                items: order.items || [],
+                total: parseFloat(order.total || 0),
+                paid_amount: parseFloat(order.paid_amount || order.total || 0),
+                change_amount: parseFloat(
+                  order.change_amount || order.change || 0,
+                ),
+                created_at: order.created_at,
+              }));
+          } else if (Array.isArray(response.data)) {
+            // Fallback if data is directly an array
+            this.recentOrders = response.data.slice(0, 10).map((order) => ({
+              id: order.id,
+              order_number: order.order_number,
+              items: order.items || [],
+              total: parseFloat(order.total || 0),
+              paid_amount: parseFloat(order.paid_amount || order.total || 0),
+              change_amount: parseFloat(
+                order.change_amount || order.change || 0,
+              ),
+              created_at: order.created_at,
+            }));
           }
         })
         .catch((error) => {
           console.error("Error loading orders:", error);
+          this.recentOrders = [];
         });
+    },
+
+    // Helper method to calculate items count from order items array
+    getOrderItemsCount(order) {
+      if (order.items && Array.isArray(order.items)) {
+        // Sum up all item quantities
+        return order.items.reduce(
+          (total, item) => total + (item.quantity || 0),
+          0,
+        );
+      }
+      // Fallback to items_count if available
+      return order.items_count || 0;
     },
 
     resetForm() {
@@ -752,54 +793,171 @@ export default {
     },
 
     printReceipt() {
-      const receiptElement = document.getElementById("receipt");
-      const printWindow = window.open("", "", "height=600,width=800");
+      if (!this.lastOrder) return;
 
-      printWindow.document.write(`
+      const printWindow = window.open("", "_blank");
+
+      // Use receiptItems that was stored during completeOrder
+      const items = this.receiptItems || [];
+      const itemsHtml = items
+        .map(
+          (item) => `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.sku || "—"}</td>
+          <td>${item.price}</td>
+          <td>${item.quantity}</td>
+          <td>${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>
+      `,
+        )
+        .join("");
+
+      const receiptHtml = `
+        <!DOCTYPE html>
         <html>
           <head>
             <title>Receipt - ${this.lastOrder.order_number}</title>
             <style>
               body {
-                font-family: 'Courier New', monospace;
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                font-size: 14px;
+              }
+              .receipt {
+                max-width: 400px;
+                margin: 0 auto;
+                border: 1px solid #ddd;
                 padding: 20px;
-                margin: 0;
+              }
+              .header {
+                text-align: center;
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+              }
+              .section {
+                margin-bottom: 15px;
               }
               table {
                 width: 100%;
                 border-collapse: collapse;
+                margin: 15px 0;
               }
-              th, td {
-                padding: 8px;
+              table th, table td {
+                padding: 5px;
                 text-align: left;
+                border-bottom: 1px solid #ddd;
               }
-              .text-center { text-align: center; }
-              .text-right { text-align: right; }
-              .text-success { color: green; }
-              .text-danger { color: red; }
-              hr {
-                border: none;
-                border-top: 2px dashed #333;
-                margin: 10px 0;
+              .total-section {
+                margin-top: 20px;
+                border-top: 2px solid #333;
+                padding-top: 10px;
+              }
+              .text-right {
+                text-align: right;
+              }
+              .text-center {
+                text-align: center;
+              }
+              .bold {
+                font-weight: bold;
               }
               @media print {
-                body { padding: 10px; }
+                body { margin: 0; padding: 10px; }
+                .no-print { display: none; }
               }
             </style>
           </head>
           <body>
-            ${receiptElement.innerHTML}
+            <div class="receipt">
+              <div class="header">
+                <h2 style="margin: 0;">Order Details</h2>
+              </div>
+
+              <div class="section">
+                <p><strong>Order Number:</strong> ${this.lastOrder.order_number}</p>
+                <p><strong>Payment Method:</strong> Cash</p>
+              </div>
+
+              <div class="section">
+                <p><strong>Customer:</strong> ${this.lastOrder.customer_name || "Walk-in"}</p>
+                <p><strong>Status:</strong> completed</p>
+              </div>
+
+              <div class="section">
+                <p><strong>Cashier:</strong> ${this.lastOrder.cashier_name || "—"}</p>
+                <p><strong>Paid Amount:</strong> ${this.lastOrder.paid_amount || this.paidAmount}</p>
+              </div>
+
+              <div class="section">
+                <p><strong>Date:</strong> ${this.getCurrentDateTime()}</p>
+                <p><strong>Change:</strong> ${this.lastOrder.change_amount || Math.max(0, this.paidAmount - this.total)}</p>
+              </div>
+
+              <div class="section">
+                <h3>Order Items</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>SKU</th>
+                      <th>Price</th>
+                      <th>Qty</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${itemsHtml}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="total-section">
+                <p><strong>Subtotal:</strong></p>
+                <p>\[ ${this.receiptSubtotal || this.subtotal} \]</p>
+                
+                <p><strong>Tax:</strong></p>
+                <p>\[ 0.00 \]</p>
+                
+                ${
+                  this.receiptDiscount
+                    ? `
+                  <p><strong>Discount:</strong></p>
+                  <p>\[ -${this.receiptDiscount} \]</p>
+                `
+                    : ""
+                }
+                
+                <p><strong>Total:</strong></p>
+                <p>\[ ${this.total} \]</p>
+              </div>
+
+              <div class="section text-center">
+                <p>Thank you for your purchase!</p>
+              </div>
+            </div>
+            
+            <div class="no-print" style="text-align: center; margin-top: 20px;">
+              <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px;">
+                Print Receipt
+              </button>
+              <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; margin-left: 10px;">
+                Close
+              </button>
+            </div>
           </body>
         </html>
-      `);
+      `;
 
+      printWindow.document.write(receiptHtml);
       printWindow.document.close();
       printWindow.focus();
 
+      // Auto print after a short delay
       setTimeout(() => {
         printWindow.print();
-        printWindow.close();
-      }, 250);
+      }, 500);
     },
 
     exportReportsCSV() {
@@ -828,12 +986,15 @@ export default {
 
       const rows = this.recentOrders.map((order) => {
         const orderDate = new Date(order.created_at);
+        const itemsCount = this.getOrderItemsCount(order);
+        const subtotal = order.subtotal || order.total + (order.discount || 0);
+
         return [
           order.order_number,
           orderDate.toLocaleDateString("en-PH"),
           orderDate.toLocaleTimeString("en-US"),
-          order.items_count || 0,
-          order.subtotal || order.total + (order.discount || 0),
+          itemsCount,
+          subtotal,
           order.discount || 0,
           order.total,
           order.paid_amount,
