@@ -4,6 +4,22 @@
       <div class="row mb-2">
         <div class="col-sm-6">
           <h1 class="m-0">POS System - Customers Management</h1>
+          <!-- Breadcrumbs -->
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent p-0 mt-2 mb-0">
+              <li class="breadcrumb-item">
+                <a href="/admin/dashboard">
+                  <i class="fas fa-home"></i> Home
+                </a>
+              </li>
+              <li class="breadcrumb-item">
+                <a href="/admin/pos">POS</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                Customers
+              </li>
+            </ol>
+          </nav>
         </div>
         <div class="col-sm-6 text-right">
           <button @click="openAddForm" type="button" class="btn btn-primary">
@@ -77,7 +93,8 @@
               <button
                 @click="cancelForm"
                 type="button"
-                class="btn btn-sm btn-secondary"
+                class="btn btn-sm btn-secondary ms-auto"
+                style="margin-left: auto"
               >
                 <i class="fas fa-times"></i> Close
               </button>
@@ -137,11 +154,11 @@
               </div>
             </div>
             <div class="card-footer">
-              <button @click="saveCustomer" class="btn btn-success btn-sm">
-                <i class="fas fa-save"></i> Save
-              </button>
               <button @click="cancelForm" class="btn btn-secondary btn-sm">
                 <i class="fas fa-times"></i> Cancel
+              </button>
+              <button @click="saveCustomer" class="btn btn-success btn-sm">
+                <i class="fas fa-save"></i> Save
               </button>
             </div>
           </div>
@@ -588,5 +605,19 @@ export default {
 
 .modal-dialog {
   margin-top: 5vh;
+}
+
+.breadcrumb-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
 }
 </style>

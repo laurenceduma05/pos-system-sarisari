@@ -4,6 +4,22 @@
       <div class="row mb-2">
         <div class="col-sm-6">
           <h1 class="m-0">POS System - Products Management</h1>
+          <!-- Breadcrumbs -->
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent p-0 mt-2 mb-0">
+              <li class="breadcrumb-item">
+                <a href="/admin/dashboard">
+                  <i class="fas fa-home"></i> Home
+                </a>
+              </li>
+              <li class="breadcrumb-item">
+                <a href="/admin/pos">POS</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                Products
+              </li>
+            </ol>
+          </nav>
         </div>
         <div class="col-sm-6 text-right">
           <button @click="showAddForm = true" class="btn btn-primary">
@@ -233,19 +249,31 @@
                 />
               </div>
             </div>
-            <div class="card-body">
-              <table class="table table-striped table-hover table-sm">
+            <div class="card-body" style="overflow-x: auto">
+              <table
+                class="table table-striped table-hover table-sm resizable-table"
+              >
                 <thead>
                   <tr>
-                    <th>SKU</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Cost</th>
-                    <th>Price</th>
-                    <th>Margin</th>
-                    <th>Stock</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th
+                      v-for="(column, index) in columns"
+                      :key="column.key"
+                      :style="{
+                        width: column.width + 'px',
+                        minWidth: column.minWidth + 'px',
+                        position: 'relative',
+                      }"
+                      class="resizable-header"
+                    >
+                      <div class="header-content">
+                        {{ column.label }}
+                      </div>
+                      <div
+                        v-if="index < columns.length - 1"
+                        class="resize-handle"
+                        @mousedown="startResize($event, index)"
+                      ></div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -258,59 +286,90 @@
                         product.stock > 0 && product.stock <= product.min_stock,
                     }"
                   >
-                    <td>
-                      <strong>{{ product.sku }}</strong>
+                    <td :style="{ width: columns[0].width + 'px' }">
+                      <div class="cell-content">
+                        <strong>{{ product.sku }}</strong>
+                      </div>
                     </td>
-                    <td>{{ product.name }}</td>
-                    <td>{{ product.category?.name || "—" }}</td>
-                    <td>{{ product.cost }}</td>
-                    <td>{{ product.price }}</td>
-                    <td>
-                      {{ calculateMargin(product.cost, product.price) }}
+                    <td :style="{ width: columns[1].width + 'px' }">
+                      <div class="cell-content" :title="product.name">
+                        {{ product.name }}
+                      </div>
                     </td>
-                    <td>
-                      <span
-                        v-if="product.stock === 0"
-                        class="badge badge-danger"
-                      >
-                        Out of Stock
-                      </span>
-                      <span
-                        v-else-if="product.stock <= product.min_stock"
-                        class="badge badge-warning"
-                      >
-                        Low ({{ product.stock }})
-                      </span>
-                      <span v-else class="badge badge-success">
-                        {{ product.stock }}
-                      </span>
+                    <td :style="{ width: columns[2].width + 'px' }">
+                      <div class="cell-content">
+                        {{ product.category?.name || "—" }}
+                      </div>
                     </td>
-                    <td>
-                      <span
-                        v-if="product.is_active"
-                        class="badge badge-success"
-                      >
-                        Active
-                      </span>
-                      <span v-else class="badge badge-danger"> Inactive </span>
+                    <td :style="{ width: columns[3].width + 'px' }">
+                      <div class="cell-content">
+                        {{ product.cost }}
+                      </div>
                     </td>
-                    <td>
-                      <button
-                        @click="editProduct(product)"
-                        class="btn btn-xs btn-info"
-                      >
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button
-                        @click="deleteProduct(product.id)"
-                        class="btn btn-xs btn-danger"
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
+                    <td :style="{ width: columns[4].width + 'px' }">
+                      <div class="cell-content">
+                        {{ product.price }}
+                      </div>
+                    </td>
+                    <td :style="{ width: columns[5].width + 'px' }">
+                      <div class="cell-content">
+                        {{ calculateMargin(product.cost, product.price) }}
+                      </div>
+                    </td>
+                    <td :style="{ width: columns[6].width + 'px' }">
+                      <div class="cell-content">
+                        <span
+                          v-if="product.stock === 0"
+                          class="badge badge-danger"
+                        >
+                          Out of Stock
+                        </span>
+                        <span
+                          v-else-if="product.stock <= product.min_stock"
+                          class="badge badge-warning"
+                        >
+                          Low ({{ product.stock }})
+                        </span>
+                        <span v-else class="badge badge-success">
+                          {{ product.stock }}
+                        </span>
+                      </div>
+                    </td>
+                    <td :style="{ width: columns[7].width + 'px' }">
+                      <div class="cell-content">
+                        <span
+                          v-if="product.is_active"
+                          class="badge badge-success"
+                        >
+                          Active
+                        </span>
+                        <span v-else class="badge badge-danger">
+                          Inactive
+                        </span>
+                      </div>
+                    </td>
+                    <td :style="{ width: columns[8].width + 'px' }">
+                      <div class="cell-content">
+                        <button
+                          @click="editProduct(product)"
+                          class="btn btn-xs btn-info"
+                        >
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button
+                          @click="deleteProduct(product.id)"
+                          class="btn btn-xs btn-danger"
+                        >
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   <tr v-if="filteredProducts.length === 0">
-                    <td colspan="9" class="text-center text-muted">
+                    <td
+                      :colspan="columns.length"
+                      class="text-center text-muted"
+                    >
                       No products found
                     </td>
                   </tr>
@@ -326,6 +385,7 @@
 
 <script>
 import axios from "axios";
+import Swal from "sweetalert2";
 
 export default {
   name: "Products",
@@ -348,6 +408,23 @@ export default {
       editingId: null,
       showAddForm: false,
       searchQuery: "",
+      columns: [
+        { key: "sku", label: "SKU", width: 120, minWidth: 80 },
+        { key: "name", label: "Name", width: 200, minWidth: 100 },
+        { key: "category", label: "Category", width: 150, minWidth: 100 },
+        { key: "cost", label: "Cost", width: 80, minWidth: 60 },
+        { key: "price", label: "Price", width: 80, minWidth: 60 },
+        { key: "margin", label: "Profit", width: 90, minWidth: 70 },
+        { key: "stock", label: "Stock", width: 120, minWidth: 100 },
+        { key: "status", label: "Status", width: 90, minWidth: 70 },
+        { key: "actions", label: "Actions", width: 100, minWidth: 100 },
+      ],
+      resizing: {
+        active: false,
+        columnIndex: null,
+        startX: 0,
+        startWidth: 0,
+      },
     };
   },
   computed: {
@@ -420,15 +497,29 @@ export default {
       this.showAddForm = true;
     },
     async deleteProduct(id) {
-      if (confirm("Are you sure you want to delete this product?")) {
+      const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, delete it!",
+      });
+
+      if (result.isConfirmed) {
         try {
           await axios.delete(`/admin/pos/products/${id}`);
           this.fetchProducts();
+
+          Swal.fire("Deleted!", "Product has been deleted.", "success");
         } catch (error) {
           console.error("Error deleting product:", error);
-          alert(
-            "Error deleting product: " + error.response?.data?.message ||
-              error.message,
+
+          Swal.fire(
+            "Error!",
+            error.response?.data?.message || error.message,
+            "error",
           );
         }
       }
@@ -449,10 +540,43 @@ export default {
         is_active: true,
       };
     },
+    startResize(event, columnIndex) {
+      this.resizing.active = true;
+      this.resizing.columnIndex = columnIndex;
+      this.resizing.startX = event.pageX;
+      this.resizing.startWidth = this.columns[columnIndex].width;
+
+      document.addEventListener("mousemove", this.onResize);
+      document.addEventListener("mouseup", this.stopResize);
+
+      event.preventDefault();
+    },
+    onResize(event) {
+      if (!this.resizing.active) return;
+
+      const diff = event.pageX - this.resizing.startX;
+      const newWidth = Math.max(
+        this.columns[this.resizing.columnIndex].minWidth,
+        this.resizing.startWidth + diff,
+      );
+
+      this.columns[this.resizing.columnIndex].width = newWidth;
+    },
+    stopResize() {
+      this.resizing.active = false;
+      this.resizing.columnIndex = null;
+
+      document.removeEventListener("mousemove", this.onResize);
+      document.removeEventListener("mouseup", this.stopResize);
+    },
   },
   mounted() {
     this.fetchProducts();
     this.fetchCategories();
+  },
+  beforeUnmount() {
+    document.removeEventListener("mousemove", this.onResize);
+    document.removeEventListener("mouseup", this.stopResize);
   },
 };
 </script>
@@ -470,5 +594,71 @@ export default {
 
 .table-warning {
   background-color: #fff3cd !important;
+}
+
+.breadcrumb-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+}
+
+/* Resizable table styles */
+.resizable-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.resizable-header {
+  position: relative;
+  user-select: none;
+  padding: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 1;
+}
+
+.resize-handle:hover {
+  background: rgba(0, 123, 255, 0.3);
+}
+
+.resize-handle:active {
+  background: rgba(0, 123, 255, 0.5);
+}
+
+.cell-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px;
+}
+
+.resizable-table td {
+  padding: 8px;
+  vertical-align: middle;
 }
 </style>
